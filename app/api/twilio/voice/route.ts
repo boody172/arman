@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const greeting =
     brand.greeting ||
-    `أهلاً بيك في ${brand.name}! معاك المساعد، تحب تطلب إيه النهارده؟`;
+    `أهلاً بيك في ${brand.name}! معاك عبدالرحمن، تحب تطلب إيه النهارده؟`;
 
   await saveSession({
     callSid,
