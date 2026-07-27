@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import twilio from "twilio";
-import { getBrandByPhoneNumber, saveSession } from "@/lib/store";
+import { getBrandByPhoneNumber } from "@/lib/store";
 import { playText } from "@/lib/twilio-tts";
+import { encodeCallState } from "@/lib/call-state";
 
 const { VoiceResponse } = twilio.twiml;
 
@@ -12,8 +13,6 @@ const { VoiceResponse } = twilio.twiml;
  */
 export async function POST(req: NextRequest) {
   const form = await req.formData();
-  const callSid = String(form.get("CallSid") || "");
-  const from = String(form.get("From") || "");
   const to = String(form.get("To") || "");
 
   const twimlResponse = new VoiceResponse();
@@ -32,21 +31,16 @@ export async function POST(req: NextRequest) {
     brand.greeting ||
     `أهلاً بيك في ${brand.name}! معاك عبدالرحمن، تحب تطلب إيه النهارده؟`;
 
-  await saveSession({
-    callSid,
+  playText(twimlResponse, brand.id, greeting);
+
+  const state = encodeCallState({
     brandId: brand.id,
-    callerPhone: from,
     history: [{ role: "assistant", content: greeting }],
     turns: 0,
-    status: "active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   });
 
-  await playText(twimlResponse, brand.id, greeting, callSid, 0);
-
   twimlResponse.record({
-    action: `/api/twilio/recording?brandId=${brand.id}`,
+    action: `/api/twilio/recording?s=${state}`,
     method: "POST",
     maxLength: 25,
     timeout: 3,

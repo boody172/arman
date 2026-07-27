@@ -1,7 +1,4 @@
 import twilio from "twilio";
-import { nanoid } from "nanoid";
-import { getBrand, putTtsAudio } from "./store";
-import { synthesizeSpeech } from "./ai";
 
 const { VoiceResponse } = twilio.twiml;
 
@@ -10,28 +7,20 @@ function baseUrl() {
 }
 
 /**
- * Synthesizes `text` for the given brand's voice and appends a <Play> to
- * the TwiML response. Falls back to Twilio's built-in Arabic <Say> if TTS
- * fails (missing/invalid API key, provider outage, ...) so a call never
- * just goes silent.
+ * Appends a <Play> pointing at /api/tts with the brand + text encoded in
+ * the query string, instead of pre-synthesizing and caching audio here.
+ * Synthesis happens lazily, inside the single request Twilio makes to
+ * fetch that URL — see app/api/tts/route.ts. That keeps this stateless
+ * (no dependency on a previous request's server memory, which Vercel does
+ * not share across separate function invocations).
  */
-export async function playText(
+export function playText(
   twimlResponse: InstanceType<typeof VoiceResponse>,
   brandId: string,
-  text: string,
-  callSid: string,
-  turn: number
+  text: string
 ) {
-  try {
-    const brand = await getBrand(brandId);
-    if (!brand) throw new Error("brand missing");
-    const { buffer, contentType } = await synthesizeSpeech(text, brand);
-    const audioId = `${callSid}-${turn}-${nanoid(6)}`;
-    putTtsAudio(audioId, buffer, contentType);
-    twimlResponse.play(`${baseUrl()}/api/tts/${audioId}`);
-  } catch {
-    // Twilio's built-in <Say> voices have no Egyptian option; ar-AE is the
-    // closest generic Arabic voice it offers for this last-resort fallback.
-    twimlResponse.say({ language: "ar-AE" }, text);
-  }
+  const url = new URL("/api/tts", baseUrl());
+  url.searchParams.set("b", brandId);
+  url.searchParams.set("t", text);
+  twimlResponse.play(url.toString());
 }

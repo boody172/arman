@@ -25,17 +25,6 @@ export interface ConversationMessage {
   content: string;
 }
 
-export interface CallSession {
-  callSid: string;
-  brandId: string;
-  callerPhone: string;
-  history: ConversationMessage[];
-  turns: number;
-  status: "active" | "completed" | "abandoned";
-  createdAt: string;
-  updatedAt: string;
-}
-
 export type OrderStatus = "new" | "notified" | "failed";
 
 export interface Order {
