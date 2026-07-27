@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-cairo: "Cairo", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #05070a;
+  color: #f3f6f4;
+}
+
+::selection {
+  background: #22c55e;
+  color: #05070a;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.5rem 0.75rem;
+  color: #f3f6f4;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #22c55e;
+}
