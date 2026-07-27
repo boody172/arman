@@ -36,6 +36,13 @@ export default function DashboardPage() {
 
       <TokenBar />
 
+      <p className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+        الفورم ده مفيد للتجربة بس. على Vercel البراندات المتضافة هنا مش
+        متضمنة في الكود، فهتتمسح مع أي إعادة نشر. أي عميل حقيقي محتاج يفضل
+        موجود دايمًا — ابعت بياناته في الشات وهيتضاف لملف <code>data/brands.ts</code>
+        {" "}ويترفع (Deploy) على طول.
+      </p>
+
       {error && (
         <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
       )}

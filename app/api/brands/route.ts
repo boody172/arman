@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { listBrands, saveBrand } from "@/lib/store";
-import { buildKnowledgeText } from "@/lib/knowledge";
 import { isAuthorized } from "@/lib/auth";
 import { Brand } from "@/lib/types";
 
@@ -29,6 +28,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ brands });
 }
 
+/**
+ * Creates a brand in the in-memory layer only (see lib/store.ts). Handy for
+ * trying the dashboard out locally, but on Vercel this does NOT persist
+ * across cold starts — real clients must be added to data/brands.ts and
+ * deployed.
+ */
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -48,13 +53,11 @@ export async function POST(req: NextRequest) {
     notifyEmail: parsed.data.notifyEmail || parsed.data.ownerEmail,
   };
 
-  const knowledgeText = await buildKnowledgeText(input);
   const now = new Date().toISOString();
 
   const brand: Brand = {
     ...input,
     id: nanoid(10),
-    knowledgeText,
     createdAt: now,
     updatedAt: now,
   };

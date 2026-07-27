@@ -1,5 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import { Brand, ConversationMessage } from "./types";
+import { getKnowledgeText } from "./knowledge";
 
 function getOpenAI() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -45,7 +46,8 @@ export async function transcribeRecording(recordingUrl: string): Promise<string>
   return transcription.text.trim();
 }
 
-function personaSystemPrompt(brand: Brand): string {
+async function personaSystemPrompt(brand: Brand): Promise<string> {
+  const knowledgeText = await getKnowledgeText(brand);
   return `انت اسمك "عبدالرحمن"، موظف استقبال طلبات بشري شغال في "${brand.name}" (${brand.businessType}) بيرد على تليفونات العملاء.
 
 قواعد أساسية لازم تلتزم بيها:
@@ -53,7 +55,7 @@ function personaSystemPrompt(brand: Brand): string {
 2. اعتمد فقط على المعلومات دي عن "${brand.name}" (منيو، أسعار، تفاصيل)، ولو حاجة مش موجودة فيها قول إنك هتتأكد بدل ما تخترع:
 
 --- بداية بيانات ${brand.name} ---
-${brand.knowledgeText || "(لسه معملتش تدريب كامل للبراند ده، اعتمد على منيو الأسعار لو موجودة)"}
+${knowledgeText || "(لسه معملتش تدريب كامل للبراند ده، اعتمد على منيو الأسعار لو موجودة)"}
 --- نهاية بيانات ${brand.name} ---
 
 3. مهمتك الأساسية: تفهم العميل عايز يطلب إيه بالظبط (الصنف، الكمية، أي تفاصيل زي حجم/إضافات)، وتأكد السعر لو موجود في البيانات، وفي الآخر تلخّص الطلب وتأكده مع العميل قبل ما تقفله.
@@ -115,7 +117,7 @@ export async function generateReply(
   const openai = getOpenAI();
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: personaSystemPrompt(brand) },
+    { role: "system", content: await personaSystemPrompt(brand) },
     ...history.map((m) => ({ role: m.role, content: m.content }) as OpenAI.Chat.ChatCompletionMessageParam),
     { role: "user", content: userMessage },
   ];

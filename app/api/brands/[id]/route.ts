@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteBrand, getBrand, saveBrand } from "@/lib/store";
-import { buildKnowledgeText } from "@/lib/knowledge";
 import { isAuthorized } from "@/lib/auth";
 
 const brandUpdateSchema = z.object({
@@ -50,15 +49,15 @@ export async function PATCH(
     );
   }
 
-  const merged = { ...existing, ...parsed.data };
-  const knowledgeText = await buildKnowledgeText(merged);
-
   const updated = {
-    ...merged,
-    knowledgeText,
+    ...existing,
+    ...parsed.data,
     updatedAt: new Date().toISOString(),
   };
 
+  // Only persists to the in-memory layer (see lib/store.ts) — on Vercel
+  // this edit is lost on the next cold start. Real edits to a live brand
+  // belong in data/brands.ts.
   await saveBrand(updated);
   return NextResponse.json({ brand: updated });
 }

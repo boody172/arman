@@ -1,13 +1,21 @@
 import { Brand, CallSession, Order } from "./types";
+import { brands as committedBrands } from "@/data/brands";
 
 /**
- * In-memory store for the MVP. Good enough for local dev and a single
- * long-running server process (e.g. `next start` on one instance).
+ * Brands come from two places:
+ *  - `data/brands.ts`: committed to git, the durable source of truth for
+ *    every real client on the live deployment (survives serverless cold
+ *    starts because it's bundled code, not runtime state).
+ *  - an in-memory Map: brands created through the dashboard form during
+ *    local development. Handy for trying the flow out, but NOT durable on
+ *    Vercel — a cold start loses them. Production brands belong in
+ *    data/brands.ts instead.
  *
- * NOT durable across serverless cold starts / multiple instances — before
- * putting this in front of real paying customers, swap the bodies of these
- * functions for calls to a real database (Vercel Postgres, Supabase, etc.)
- * and keep the same function signatures so nothing else has to change.
+ * Sessions/orders/tts audio are inherently short-lived runtime state (one
+ * phone call, a few minutes), so plain in-memory is fine for those even in
+ * production — order delivery to the brand owner happens over email
+ * (lib/notify.ts) independent of this store, so it doesn't depend on the
+ * order surviving a cold start.
  */
 
 interface StoreShape {
@@ -28,27 +36,37 @@ const store: StoreShape =
     ttsAudio: new Map(),
   });
 
+function allBrands(): Brand[] {
+  const merged = new Map<string, Brand>();
+  for (const brand of committedBrands) merged.set(brand.id, brand);
+  for (const brand of store.brands.values()) merged.set(brand.id, brand);
+  return Array.from(merged.values());
+}
+
 // ---- Brands ----
 
 export async function listBrands(): Promise<Brand[]> {
-  return Array.from(store.brands.values()).sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
-  );
+  return allBrands().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getBrand(id: string): Promise<Brand | undefined> {
-  return store.brands.get(id);
+  return store.brands.get(id) ?? committedBrands.find((b) => b.id === id);
 }
 
 export async function getBrandByPhoneNumber(
   phoneNumber: string
 ): Promise<Brand | undefined> {
   const normalized = phoneNumber.replace(/[\s-]/g, "");
-  return Array.from(store.brands.values()).find(
+  return allBrands().find(
     (b) => b.twilioPhoneNumber.replace(/[\s-]/g, "") === normalized
   );
 }
 
+/**
+ * Saves to the in-memory layer only — see the module doc comment. This is
+ * what the dashboard's create/edit forms call; it's fine for local dev but
+ * won't persist on Vercel. Real clients go through data/brands.ts.
+ */
 export async function saveBrand(brand: Brand): Promise<Brand> {
   store.brands.set(brand.id, brand);
   return brand;

@@ -14,15 +14,11 @@ export interface Brand {
   extraNotes: string;
   greeting: string;
   voiceId: string;
-  knowledgeText: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export type BrandInput = Omit<
-  Brand,
-  "id" | "knowledgeText" | "createdAt" | "updatedAt"
->;
+export type BrandInput = Omit<Brand, "id" | "createdAt" | "updatedAt">;
 
 export interface ConversationMessage {
   role: "system" | "user" | "assistant";

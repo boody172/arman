@@ -50,8 +50,7 @@ async function fetchPageText(url: string): Promise<string> {
  * Compiles every source a brand owner provides (menu text, website,
  * Instagram/Facebook links, free-form notes) into one plain-text knowledge
  * block that gets injected into the voice agent's system prompt for that
- * brand. Run once when the brand is created/updated and cached, so calls
- * don't pay the fetch latency.
+ * brand.
  */
 export async function buildKnowledgeText(input: BrandInput): Promise<string> {
   const [websiteText, instagramText, facebookText] = await Promise.all([
@@ -73,4 +72,23 @@ export async function buildKnowledgeText(input: BrandInput): Promise<string> {
   ].filter(Boolean);
 
   return sections.join("\n\n---\n\n");
+}
+
+const knowledgeCache = new Map<string, { text: string; expiresAt: number }>();
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * Same as buildKnowledgeText, but cached per (brand id + updatedAt) so a
+ * multi-turn phone call doesn't re-fetch the brand's website/social pages
+ * on every single reply. The cache key includes updatedAt, so editing a
+ * brand naturally invalidates it.
+ */
+export async function getKnowledgeText(brand: Brand): Promise<string> {
+  const key = `${brand.id}:${brand.updatedAt}`;
+  const cached = knowledgeCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.text;
+
+  const text = await buildKnowledgeText(brand);
+  knowledgeCache.set(key, { text, expiresAt: Date.now() + CACHE_TTL_MS });
+  return text;
 }

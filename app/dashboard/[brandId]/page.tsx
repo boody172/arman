@@ -14,6 +14,8 @@ export default function BrandDetailPage({
   params: { brandId: string };
 }) {
   const [brand, setBrand] = useState<Brand | null>(null);
+  const [knowledgeText, setKnowledgeText] = useState("");
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [error, setError] = useState("");
   const [origin, setOrigin] = useState("");
 
@@ -23,6 +25,20 @@ export default function BrandDetailPage({
       .then(({ brand }) => setBrand(brand))
       .catch((err) => setError(err.message));
   }, [params.brandId]);
+
+  async function loadKnowledge() {
+    setKnowledgeLoading(true);
+    try {
+      const { knowledgeText } = await apiFetch(
+        `/api/brands/${params.brandId}/knowledge`
+      );
+      setKnowledgeText(knowledgeText);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "حصل خطأ");
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  }
 
   const webhookUrl = `${origin}/api/twilio/voice`;
 
@@ -72,9 +88,18 @@ export default function BrandDetailPage({
           <BrandEditForm brand={brand} onUpdated={setBrand} />
 
           <div className="space-y-3">
-            <h2 className="text-lg font-bold">بيانات دُرّب عليها الـ Agent (معاينة)</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">بيانات دُرّب عليها الـ Agent (معاينة)</h2>
+              <button
+                onClick={loadKnowledge}
+                disabled={knowledgeLoading}
+                className="rounded-lg border border-white/15 px-3 py-1.5 text-xs hover:bg-white/5 disabled:opacity-50"
+              >
+                {knowledgeLoading ? "بيتحمّل..." : "اعرض/حدّث المعاينة"}
+              </button>
+            </div>
             <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-white/60">
-              {brand.knowledgeText || "لسه مفيش بيانات كافية."}
+              {knowledgeText || "دوس على \"اعرض/حدّث المعاينة\" عشان تشوف اللي الـ Agent شايفه."}
             </pre>
           </div>
 
