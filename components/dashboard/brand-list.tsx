@@ -29,6 +29,11 @@ export function BrandList({ brands }: { brands: Brand[] }) {
           <p className="mt-1 text-sm text-white/50" dir="ltr">
             {brand.twilioPhoneNumber || "لسه محتاج تربط رقم Twilio"}
           </p>
+          {brand.monthlyFeeEgp > 0 && (
+            <p className="mt-1 text-xs text-white/40">
+              اشتراك {brand.monthlyFeeEgp} ج.م/شهر
+            </p>
+          )}
         </Link>
       ))}
     </div>

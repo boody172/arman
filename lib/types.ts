@@ -14,6 +14,10 @@ export interface Brand {
   extraNotes: string;
   greeting: string;
   voiceId: string;
+  /** What you charge this client per month, in EGP. Used for the profit/loss report. */
+  monthlyFeeEgp: number;
+  /** Flat Twilio number rental, in USD/month (not usage-based) — check your Twilio invoice. */
+  twilioNumberMonthlyFeeUsd: number;
   createdAt: string;
   updatedAt: string;
 }

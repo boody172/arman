@@ -32,6 +32,8 @@ export function BrandEditForm({
     extraNotes: brand.extraNotes,
     greeting: brand.greeting,
     voiceId: brand.voiceId,
+    monthlyFeeEgp: String(brand.monthlyFeeEgp ?? ""),
+    twilioNumberMonthlyFeeUsd: String(brand.twilioNumberMonthlyFeeUsd ?? "1.15"),
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,7 +49,11 @@ export function BrandEditForm({
     try {
       const { brand: updated } = await apiFetch(`/api/brands/${brand.id}`, {
         method: "PATCH",
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          monthlyFeeEgp: Number(form.monthlyFeeEgp) || 0,
+          twilioNumberMonthlyFeeUsd: Number(form.twilioNumberMonthlyFeeUsd) || 0,
+        }),
       });
       onUpdated(updated);
       setMessage("اتحفظ وأعاد تدريب الـ Agent على البيانات الجديدة ✓");
@@ -138,6 +144,29 @@ export function BrandEditForm({
             value={form.greeting}
             onChange={(e) => update("greeting", e.target.value)}
             className="input"
+          />
+        </Field>
+
+        <Field label="الاشتراك الشهري اللي بتاخده من العميل (جنيه)">
+          <input
+            type="number"
+            min="0"
+            value={form.monthlyFeeEgp}
+            onChange={(e) => update("monthlyFeeEgp", e.target.value)}
+            className="input"
+            dir="ltr"
+          />
+        </Field>
+
+        <Field label="إيجار رقم Twilio الشهري (دولار)">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.twilioNumberMonthlyFeeUsd}
+            onChange={(e) => update("twilioNumberMonthlyFeeUsd", e.target.value)}
+            className="input"
+            dir="ltr"
           />
         </Field>
       </div>

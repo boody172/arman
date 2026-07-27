@@ -25,6 +25,8 @@ const emptyForm = {
   extraNotes: "",
   greeting: "",
   voiceId: "",
+  monthlyFeeEgp: "",
+  twilioNumberMonthlyFeeUsd: "1.15",
 };
 
 export function BrandForm({ onCreated }: { onCreated: (brand: Brand) => void }) {
@@ -43,7 +45,11 @@ export function BrandForm({ onCreated }: { onCreated: (brand: Brand) => void }) 
     try {
       const { brand } = await apiFetch("/api/brands", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          monthlyFeeEgp: Number(form.monthlyFeeEgp) || 0,
+          twilioNumberMonthlyFeeUsd: Number(form.twilioNumberMonthlyFeeUsd) || 0,
+        }),
       });
       onCreated(brand);
       setForm(emptyForm);
@@ -144,6 +150,30 @@ export function BrandForm({ onCreated }: { onCreated: (brand: Brand) => void }) 
             onChange={(e) => update("greeting", e.target.value)}
             className="input"
             placeholder="أهلاً بيك في..."
+          />
+        </Field>
+
+        <Field label="الاشتراك الشهري اللي بتاخده من العميل (جنيه)">
+          <input
+            type="number"
+            min="0"
+            value={form.monthlyFeeEgp}
+            onChange={(e) => update("monthlyFeeEgp", e.target.value)}
+            className="input"
+            dir="ltr"
+            placeholder="500"
+          />
+        </Field>
+
+        <Field label="إيجار رقم Twilio الشهري (دولار)">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.twilioNumberMonthlyFeeUsd}
+            onChange={(e) => update("twilioNumberMonthlyFeeUsd", e.target.value)}
+            className="input"
+            dir="ltr"
           />
         </Field>
       </div>

@@ -18,6 +18,8 @@ const brandInputSchema = z.object({
   extraNotes: z.string().optional().default(""),
   greeting: z.string().optional().default(""),
   voiceId: z.string().optional().default(""),
+  monthlyFeeEgp: z.number().min(0).optional().default(0),
+  twilioNumberMonthlyFeeUsd: z.number().min(0).optional().default(1.15),
 });
 
 export async function GET(req: NextRequest) {

@@ -7,6 +7,8 @@ import { notifyNewOrder } from "@/lib/notify";
 import { playText } from "@/lib/twilio-tts";
 import { decodeCallState, encodeCallState, CallState } from "@/lib/call-state";
 import { Order } from "@/lib/types";
+import { estimateGptCost, estimateWhisperCost } from "@/lib/pricing-rates";
+import { logUsage } from "@/lib/usage-log";
 
 const { VoiceResponse } = twilio.twiml;
 const MAX_TURNS = 12;
@@ -65,6 +67,12 @@ export async function POST(req: NextRequest) {
   let userText = "";
   try {
     userText = await transcribeRecording(recordingUrl);
+    logUsage({
+      type: "whisper",
+      brandId: brand.id,
+      seconds: recordingDuration,
+      costUsd: estimateWhisperCost(recordingDuration),
+    });
   } catch (err) {
     console.error("Transcription failed:", err);
     userText = "";
@@ -77,6 +85,14 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await generateReply(brand, state.history, userText);
+
+  logUsage({
+    type: "gpt",
+    brandId: brand.id,
+    promptTokens: result.promptTokens,
+    completionTokens: result.completionTokens,
+    costUsd: estimateGptCost(result.promptTokens, result.completionTokens),
+  });
 
   const updatedState: CallState = {
     brandId: brand.id,

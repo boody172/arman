@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBrand } from "@/lib/store";
 import { synthesizeSpeech } from "@/lib/ai";
+import { estimateTtsCost } from "@/lib/pricing-rates";
+import { logUsage } from "@/lib/usage-log";
 
 /**
  * Twilio's <Play> verb fetches audio from a public URL — this is that URL.
@@ -18,7 +20,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { buffer, contentType } = await synthesizeSpeech(text, brand);
+    const { buffer, contentType, provider, characters } = await synthesizeSpeech(
+      text,
+      brand
+    );
+    logUsage({
+      type: "tts",
+      brandId: brand.id,
+      provider,
+      characters,
+      costUsd: estimateTtsCost(characters, provider),
+    });
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": contentType,

@@ -73,6 +73,8 @@ export interface ReplyResult {
   reply: string;
   order?: OrderFinalized;
   shouldEndCall?: boolean;
+  promptTokens: number;
+  completionTokens: number;
 }
 
 const finalizeOrderTool = {
@@ -133,8 +135,15 @@ export async function generateReply(
   const choice = completion.choices[0];
   const toolCalls = choice.message.tool_calls ?? [];
 
+  let promptTokens = completion.usage?.prompt_tokens ?? 0;
+  let completionTokens = completion.usage?.completion_tokens ?? 0;
+
   if (toolCalls.length === 0) {
-    return { reply: choice.message.content?.trim() || "ممكن تعيد كلامك تاني؟" };
+    return {
+      reply: choice.message.content?.trim() || "ممكن تعيد كلامك تاني؟",
+      promptTokens,
+      completionTokens,
+    };
   }
 
   let order: OrderFinalized | undefined;
@@ -171,6 +180,9 @@ export async function generateReply(
     temperature: 0.6,
   });
 
+  promptTokens += followUp.usage?.prompt_tokens ?? 0;
+  completionTokens += followUp.usage?.completion_tokens ?? 0;
+
   return {
     reply:
       followUp.choices[0].message.content?.trim() ||
@@ -179,13 +191,22 @@ export async function generateReply(
         : "شكرًا لحضرتك، مع السلامة!"),
     order,
     shouldEndCall,
+    promptTokens,
+    completionTokens,
   };
+}
+
+export interface SynthesizedSpeech {
+  buffer: Buffer;
+  contentType: string;
+  provider: "openai" | "elevenlabs";
+  characters: number;
 }
 
 export async function synthesizeSpeech(
   text: string,
   brand: Brand
-): Promise<{ buffer: Buffer; contentType: string }> {
+): Promise<SynthesizedSpeech> {
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = brand.voiceId || process.env.ELEVENLABS_VOICE_ID;
 
@@ -207,7 +228,12 @@ export async function synthesizeSpeech(
     );
     if (res.ok) {
       const arrayBuffer = await res.arrayBuffer();
-      return { buffer: Buffer.from(arrayBuffer), contentType: "audio/mpeg" };
+      return {
+        buffer: Buffer.from(arrayBuffer),
+        contentType: "audio/mpeg",
+        provider: "elevenlabs",
+        characters: text.length,
+      };
     }
     // fall through to OpenAI TTS if ElevenLabs errors (e.g. quota)
   }
@@ -219,5 +245,10 @@ export async function synthesizeSpeech(
     input: text,
   });
   const arrayBuffer = await speech.arrayBuffer();
-  return { buffer: Buffer.from(arrayBuffer), contentType: "audio/mpeg" };
+  return {
+    buffer: Buffer.from(arrayBuffer),
+    contentType: "audio/mpeg",
+    provider: "openai",
+    characters: text.length,
+  };
 }

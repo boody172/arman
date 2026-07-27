@@ -16,6 +16,8 @@ const brandUpdateSchema = z.object({
   extraNotes: z.string().optional(),
   greeting: z.string().optional(),
   voiceId: z.string().optional(),
+  monthlyFeeEgp: z.number().min(0).optional(),
+  twilioNumberMonthlyFeeUsd: z.number().min(0).optional(),
 });
 
 export async function GET(
